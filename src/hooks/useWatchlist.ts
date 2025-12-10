@@ -21,6 +21,18 @@ export function useWatchlist() {
 
   const addEntry = useCallback(
     (entry: Omit<WatchlistEntry, 'id' | 'createdAt'>) => {
+      // Check for duplicates
+      const isDuplicate = entries.some(
+        (existing) =>
+          existing.host === entry.host &&
+          existing.port === entry.port &&
+          existing.endpointPath === entry.endpointPath
+      )
+
+      if (isDuplicate) {
+        return null
+      }
+
       const newEntry: WatchlistEntry = {
         ...entry,
         id: generateId(),
@@ -29,7 +41,7 @@ export function useWatchlist() {
       setEntries((prev) => [...prev, newEntry])
       return newEntry
     },
-    []
+    [entries]
   )
 
   const updateEntry = useCallback(

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AlertCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,14 +16,27 @@ interface AddPortDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (entry: Omit<WatchlistEntry, 'id' | 'createdAt'>) => void
+  existingEntries?: WatchlistEntry[]
 }
 
-export function AddPortDialog({ open, onOpenChange, onAdd }: AddPortDialogProps) {
+export function AddPortDialog({ open, onOpenChange, onAdd, existingEntries = [] }: AddPortDialogProps) {
   const [host, setHost] = useState('localhost')
   const [port, setPort] = useState('')
   const [endpointPath, setEndpointPath] = useState('')
   const [label, setLabel] = useState('')
   const [error, setError] = useState('')
+
+  const isDuplicate = (hostVal: string, portVal: string, pathVal: string): boolean => {
+    const portNum = parseInt(portVal, 10)
+    if (isNaN(portNum)) return false
+
+    return existingEntries.some(
+      (entry) =>
+        entry.host === hostVal &&
+        entry.port === portNum &&
+        entry.endpointPath === (pathVal || undefined)
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,8 +47,14 @@ export function AddPortDialog({ open, onOpenChange, onAdd }: AddPortDialogProps)
       return
     }
 
+    const finalHost = host || 'localhost'
+    if (isDuplicate(finalHost, port, endpointPath)) {
+      setError('This port is already in your watchlist')
+      return
+    }
+
     onAdd({
-      host: host || 'localhost',
+      host: finalHost,
       port: portNum,
       endpointPath: endpointPath || undefined,
       label: label || undefined,
@@ -109,7 +129,19 @@ export function AddPortDialog({ open, onOpenChange, onAdd }: AddPortDialogProps)
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-700 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          {port && !error && isDuplicate(host || 'localhost', port, endpointPath) && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-700 mt-0.5" />
+              <p className="text-sm text-amber-700">This port is already in your watchlist</p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button
@@ -119,7 +151,7 @@ export function AddPortDialog({ open, onOpenChange, onAdd }: AddPortDialogProps)
             >
               Cancel
             </Button>
-            <Button type="submit">Add</Button>
+            <Button type="submit" disabled={!!(error || (port && isDuplicate(host || 'localhost', port, endpointPath)))}>Add</Button>
           </DialogFooter>
         </form>
       </DialogContent>

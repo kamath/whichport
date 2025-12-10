@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, RefreshCw } from 'lucide-react'
+import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PortCard } from './PortCard'
 import { AddPortDialog } from './AddPortDialog'
@@ -11,6 +11,7 @@ import type { WatchlistEntry } from '@/types/port'
 
 export function PortWatchlist() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [duplicateError, setDuplicateError] = useState('')
   const { entries, addEntry, updateEntry, removeEntry } = useWatchlist()
   const { statuses, checkSinglePort, checkAllPorts } = usePortChecker(entries)
   const { config, updateConfig } = useAutoRefresh(checkAllPorts)
@@ -28,9 +29,15 @@ export function PortWatchlist() {
   const handleAddEntry = useCallback(
     (entry: Omit<WatchlistEntry, 'id' | 'createdAt'>) => {
       const newEntry = addEntry(entry)
+      if (newEntry === null) {
+        const path = entry.endpointPath ? ` (${entry.endpointPath})` : ''
+        setDuplicateError(`Port ${entry.host}:${entry.port}${path} is already in your watchlist`)
+        return
+      }
       // Slight delay to ensure state is updated
       setTimeout(() => checkSinglePort(newEntry), 0)
       setAddDialogOpen(false)
+      setDuplicateError('')
     },
     [addEntry, checkSinglePort]
   )
@@ -67,10 +74,24 @@ export function PortWatchlist() {
         </div>
       </div>
 
+      {duplicateError && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{duplicateError}</span>
+          <button
+            onClick={() => setDuplicateError('')}
+            className="ml-auto text-red-700 hover:text-red-900"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {entries.length === 0 ? (
         <>
           <EmptyState onAddClick={() => setAddDialogOpen(true)} />
-          <QuickAddPorts onQuickAdd={handleQuickAddPort} />
+          <QuickAddPorts onQuickAdd={handleQuickAddPort} entries={entries} />
         </>
       ) : (
         <>
@@ -86,7 +107,7 @@ export function PortWatchlist() {
               />
             ))}
           </div>
-          <QuickAddPorts onQuickAdd={handleQuickAddPort} />
+          <QuickAddPorts onQuickAdd={handleQuickAddPort} entries={entries} />
         </>
       )}
 
@@ -94,6 +115,7 @@ export function PortWatchlist() {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onAdd={handleAddEntry}
+        existingEntries={entries}
       />
     </div>
   )
@@ -129,16 +151,25 @@ function EmptyState({ onAddClick }: EmptyStateProps) {
 
 interface QuickAddPortsProps {
   onQuickAdd: (port: number, label: string) => void
+  entries?: WatchlistEntry[]
 }
 
-function QuickAddPorts({ onQuickAdd }: QuickAddPortsProps) {
+function QuickAddPorts({ onQuickAdd, entries = [] }: QuickAddPortsProps) {
+  const availablePorts = COMMON_PORTS.filter(
+    ({ port }) => !entries.some((entry) => entry.port === port && entry.host === 'localhost')
+  )
+
+  if (availablePorts.length === 0) {
+    return null
+  }
+
   return (
     <div className="mt-8 pt-6 border-t">
       <p className="text-xs text-muted-foreground mb-4 uppercase tracking-wide">
         Quick add common ports
       </p>
       <div className="flex flex-wrap gap-2">
-        {COMMON_PORTS.map(({ port, label }) => (
+        {availablePorts.map(({ port, label }) => (
           <Button
             key={port}
             variant="outline"
