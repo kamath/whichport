@@ -57,7 +57,18 @@ export function PortWatchlist() {
   return (
     <div className="container mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Port Watchlist</h1>
+        <div className='flex items-center gap-2'>
+          <h1 className="text-2xl font-bold">Which Port?</h1>
+          <iframe
+            src="https://ghbtns.com/github-btn.html?user=kamath&repo=whichport&type=star&count=true&size=small"
+            frameBorder="0"
+            scrolling="0"
+            width="72"
+            height="20"
+            title="GitHub"
+            className="align-middle"
+          />
+        </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <RefreshControls config={config} onConfigChange={updateConfig} />

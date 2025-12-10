@@ -1,4 +1,12 @@
-Welcome to your new TanStack app! 
+# Which Port?
+
+Check it out at [whichport.com](https://whichport.com).
+
+![Which Port?](./public/sample.png)
+
+This is a super simple fully client-side application built with React, TanStack Router, Vite, and Bun. 
+
+It makes client-side requests to local ports to help you keep track of all your local ports, and also see what's running and what's not.
 
 # Getting Started
 
