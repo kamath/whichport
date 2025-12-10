@@ -1,19 +1,15 @@
 import { useState } from 'react'
-import {
-  MoreVertical,
-  RefreshCw,
-  Trash2,
-  Pencil,
-  ExternalLink,
-} from 'lucide-react'
+import { RefreshCw, Trash2, Pencil, ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { StatusIndicator } from './StatusIndicator'
 import { EditPortDialog } from './EditPortDialog'
 import type { WatchlistEntry, PortStatus } from '@/types/port'
@@ -34,6 +30,7 @@ export function PortCard({
   onRemove,
 }: PortCardProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
 
   const url = `http://${entry.host}:${entry.port}${entry.endpointPath || ''}`
 
@@ -111,26 +108,22 @@ export function PortCard({
                 </Button>
               )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={onRemove}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Remove
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditDialogOpen(true)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setRemoveDialogOpen(true)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -145,6 +138,38 @@ export function PortCard({
           setEditDialogOpen(false)
         }}
       />
+
+      <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove port from watchlist?</DialogTitle>
+            <DialogDescription>
+              This will remove{' '}
+              <span className="font-medium">
+                {entry.label || `${entry.host}:${entry.port}`}
+              </span>{' '}
+              from your watchlist. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRemoveDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onRemove()
+                setRemoveDialogOpen(false)
+              }}
+            >
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
