@@ -13,13 +13,14 @@ import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 
 import App from './App.tsx'
+import { ThemeProvider } from './components/ThemeProvider.tsx'
 
 const rootRoute = createRootRoute({
   component: () => (
-    <>
+    <ThemeProvider defaultTheme="system">
       <Outlet />
       <TanStackRouterDevtools />
-    </>
+    </ThemeProvider>
   ),
 })
 

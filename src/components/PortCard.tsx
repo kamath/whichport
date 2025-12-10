@@ -37,9 +37,16 @@ export function PortCard({
 
   const url = `http://${entry.host}:${entry.port}${entry.endpointPath || ''}`
 
+  const handleCardClick = () => {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <>
-      <Card className="transition-shadow hover:shadow-md">
+      <Card
+        className="cursor-pointer transition-shadow hover:shadow-md"
+        onClick={handleCardClick}
+      >
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <StatusIndicator status={status?.status || 'unknown'} />
@@ -81,7 +88,10 @@ export function PortCard({
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div
+              className="flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Button
                 variant="ghost"
                 size="icon"

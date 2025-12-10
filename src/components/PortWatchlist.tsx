@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { PortCard } from './PortCard'
 import { AddPortDialog } from './AddPortDialog'
 import { RefreshControls } from './RefreshControls'
+import { ThemeToggle } from './ThemeToggle'
 import { useWatchlist } from '@/hooks/useWatchlist'
 import { usePortChecker } from '@/hooks/usePortChecker'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
@@ -58,6 +59,7 @@ export function PortWatchlist() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Port Watchlist</h1>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <RefreshControls config={config} onConfigChange={updateConfig} />
           <Button
             variant="outline"
@@ -159,27 +161,24 @@ function WatchlistSorted({
   onEdit,
   onRemove,
 }: WatchlistSortedProps) {
-  const activeEntries = entries
-    .filter((entry) => statuses[entry.id]?.status === 'active')
+  // Treat unknown/checking as available until proven otherwise
+  const availableEntries = entries
+    .filter((entry) => statuses[entry.id]?.status !== 'inactive')
     .sort((a, b) => a.port - b.port)
 
   const inactiveEntries = entries
     .filter((entry) => statuses[entry.id]?.status === 'inactive')
     .sort((a, b) => a.port - b.port)
 
-  const unknownEntries = entries
-    .filter((entry) => !['active', 'inactive'].includes(statuses[entry.id]?.status || ''))
-    .sort((a, b) => a.port - b.port)
-
   return (
     <>
-      {activeEntries.length > 0 && (
+      {availableEntries.length > 0 && (
         <div className="mb-6">
           <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-semibold">
             Available
           </p>
           <div className="space-y-3">
-            {activeEntries.map((entry) => (
+            {availableEntries.map((entry) => (
               <PortCard
                 key={entry.id}
                 entry={entry}
@@ -200,26 +199,6 @@ function WatchlistSorted({
           </p>
           <div className="space-y-3">
             {inactiveEntries.map((entry) => (
-              <PortCard
-                key={entry.id}
-                entry={entry}
-                status={statuses[entry.id]}
-                onRefresh={() => onRefresh(entry)}
-                onEdit={onEdit}
-                onRemove={() => onRemove(entry.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {unknownEntries.length > 0 && (
-        <div className="mb-6">
-          <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-semibold">
-            Unknown
-          </p>
-          <div className="space-y-3">
-            {unknownEntries.map((entry) => (
               <PortCard
                 key={entry.id}
                 entry={entry}
