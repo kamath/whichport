@@ -7,7 +7,7 @@ import { RefreshControls } from './RefreshControls'
 import { useWatchlist } from '@/hooks/useWatchlist'
 import { usePortChecker } from '@/hooks/usePortChecker'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
-import type { WatchlistEntry } from '@/types/port'
+import type { WatchlistEntry, PortStatus } from '@/types/port'
 
 export function PortWatchlist() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -95,18 +95,13 @@ export function PortWatchlist() {
         </>
       ) : (
         <>
-          <div className="space-y-3">
-            {entries.map((entry) => (
-              <PortCard
-                key={entry.id}
-                entry={entry}
-                status={statuses[entry.id]}
-                onRefresh={() => checkSinglePort(entry)}
-                onEdit={updateEntry}
-                onRemove={() => removeEntry(entry.id)}
-              />
-            ))}
-          </div>
+          <WatchlistSorted
+            entries={entries}
+            statuses={statuses}
+            onRefresh={checkSinglePort}
+            onEdit={updateEntry}
+            onRemove={removeEntry}
+          />
           <QuickAddPorts onQuickAdd={handleQuickAddPort} entries={entries} />
         </>
       )}
@@ -149,6 +144,98 @@ function EmptyState({ onAddClick }: EmptyStateProps) {
   )
 }
 
+interface WatchlistSortedProps {
+  entries: WatchlistEntry[]
+  statuses: Record<string, PortStatus | undefined>
+  onRefresh: (entry: WatchlistEntry) => void
+  onEdit: (id: string, updates: Partial<WatchlistEntry>) => void
+  onRemove: (id: string) => void
+}
+
+function WatchlistSorted({
+  entries,
+  statuses,
+  onRefresh,
+  onEdit,
+  onRemove,
+}: WatchlistSortedProps) {
+  const activeEntries = entries
+    .filter((entry) => statuses[entry.id]?.status === 'active')
+    .sort((a, b) => a.port - b.port)
+
+  const inactiveEntries = entries
+    .filter((entry) => statuses[entry.id]?.status === 'inactive')
+    .sort((a, b) => a.port - b.port)
+
+  const unknownEntries = entries
+    .filter((entry) => !['active', 'inactive'].includes(statuses[entry.id]?.status || ''))
+    .sort((a, b) => a.port - b.port)
+
+  return (
+    <>
+      {activeEntries.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-semibold">
+            Available
+          </p>
+          <div className="space-y-3">
+            {activeEntries.map((entry) => (
+              <PortCard
+                key={entry.id}
+                entry={entry}
+                status={statuses[entry.id]}
+                onRefresh={() => onRefresh(entry)}
+                onEdit={onEdit}
+                onRemove={() => onRemove(entry.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {inactiveEntries.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-semibold">
+            Not Available
+          </p>
+          <div className="space-y-3">
+            {inactiveEntries.map((entry) => (
+              <PortCard
+                key={entry.id}
+                entry={entry}
+                status={statuses[entry.id]}
+                onRefresh={() => onRefresh(entry)}
+                onEdit={onEdit}
+                onRemove={() => onRemove(entry.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {unknownEntries.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-semibold">
+            Unknown
+          </p>
+          <div className="space-y-3">
+            {unknownEntries.map((entry) => (
+              <PortCard
+                key={entry.id}
+                entry={entry}
+                status={statuses[entry.id]}
+                onRefresh={() => onRefresh(entry)}
+                onEdit={onEdit}
+                onRemove={() => onRemove(entry.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 interface QuickAddPortsProps {
   onQuickAdd: (port: number, label: string) => void
   entries?: WatchlistEntry[]
@@ -157,9 +244,13 @@ interface QuickAddPortsProps {
 function QuickAddPorts({ onQuickAdd, entries = [] }: QuickAddPortsProps) {
   const availablePorts = COMMON_PORTS.filter(
     ({ port }) => !entries.some((entry) => entry.port === port && entry.host === 'localhost')
-  )
+  ).sort((a, b) => a.port - b.port)
 
-  if (availablePorts.length === 0) {
+  const unavailablePorts = COMMON_PORTS.filter(
+    ({ port }) => entries.some((entry) => entry.port === port && entry.host === 'localhost')
+  ).sort((a, b) => a.port - b.port)
+
+  if (availablePorts.length === 0 && unavailablePorts.length === 0) {
     return null
   }
 
@@ -168,20 +259,46 @@ function QuickAddPorts({ onQuickAdd, entries = [] }: QuickAddPortsProps) {
       <p className="text-xs text-muted-foreground mb-4 uppercase tracking-wide">
         Quick add common ports
       </p>
-      <div className="flex flex-wrap gap-2">
-        {availablePorts.map(({ port, label }) => (
-          <Button
-            key={port}
-            variant="outline"
-            size="sm"
-            className="border-dashed"
-            onClick={() => onQuickAdd(port, label)}
-            title={label}
-          >
-            {port} <span className="ml-1 text-xs text-muted-foreground hidden sm:inline">({label})</span>
-          </Button>
-        ))}
-      </div>
+
+      {availablePorts.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground mb-2">Available</p>
+          <div className="flex flex-wrap gap-2">
+            {availablePorts.map(({ port, label }) => (
+              <Button
+                key={port}
+                variant="outline"
+                size="sm"
+                className="border-dashed"
+                onClick={() => onQuickAdd(port, label)}
+                title={label}
+              >
+                {port} <span className="ml-1 text-xs text-muted-foreground hidden sm:inline">({label})</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {unavailablePorts.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">In watchlist</p>
+          <div className="flex flex-wrap gap-2">
+            {unavailablePorts.map(({ port, label }) => (
+              <Button
+                key={port}
+                variant="outline"
+                size="sm"
+                className="border-dashed opacity-50 cursor-not-allowed"
+                disabled
+                title={`${label} - already in watchlist`}
+              >
+                {port} <span className="ml-1 text-xs text-muted-foreground hidden sm:inline">({label})</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
