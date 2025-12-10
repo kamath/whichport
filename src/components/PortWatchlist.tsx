@@ -35,6 +35,17 @@ export function PortWatchlist() {
     [addEntry, checkSinglePort]
   )
 
+  const handleQuickAddPort = useCallback(
+    (port: number, label: string) => {
+      handleAddEntry({
+        host: 'localhost',
+        port,
+        label,
+      })
+    },
+    [handleAddEntry]
+  )
+
   return (
     <div className="container mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -57,20 +68,26 @@ export function PortWatchlist() {
       </div>
 
       {entries.length === 0 ? (
-        <EmptyState onAddClick={() => setAddDialogOpen(true)} />
+        <>
+          <EmptyState onAddClick={() => setAddDialogOpen(true)} />
+          <QuickAddPorts onQuickAdd={handleQuickAddPort} />
+        </>
       ) : (
-        <div className="space-y-3">
-          {entries.map((entry) => (
-            <PortCard
-              key={entry.id}
-              entry={entry}
-              status={statuses[entry.id]}
-              onRefresh={() => checkSinglePort(entry)}
-              onEdit={updateEntry}
-              onRemove={() => removeEntry(entry.id)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {entries.map((entry) => (
+              <PortCard
+                key={entry.id}
+                entry={entry}
+                status={statuses[entry.id]}
+                onRefresh={() => checkSinglePort(entry)}
+                onEdit={updateEntry}
+                onRemove={() => removeEntry(entry.id)}
+              />
+            ))}
+          </div>
+          <QuickAddPorts onQuickAdd={handleQuickAddPort} />
+        </>
       )}
 
       <AddPortDialog
@@ -82,9 +99,23 @@ export function PortWatchlist() {
   )
 }
 
-function EmptyState({ onAddClick }: { onAddClick: () => void }) {
+const COMMON_PORTS = [
+  { port: 3000, label: 'React Dev' },
+  { port: 5173, label: 'Vite Dev' },
+  { port: 8080, label: 'Common' },
+  { port: 8000, label: 'Python' },
+  { port: 9000, label: 'Custom' },
+  { port: 5432, label: 'PostgreSQL' },
+  { port: 27017, label: 'MongoDB' },
+]
+
+interface EmptyStateProps {
+  onAddClick: () => void
+}
+
+function EmptyState({ onAddClick }: EmptyStateProps) {
   return (
-    <div className="rounded-lg border-2 border-dashed py-12 text-center">
+    <div className="rounded-lg border-2 border-dashed py-12 px-6 text-center">
       <p className="text-muted-foreground mb-4">
         No ports in your watchlist yet.
       </p>
@@ -92,6 +123,34 @@ function EmptyState({ onAddClick }: { onAddClick: () => void }) {
         <Plus className="mr-2 h-4 w-4" />
         Add Your First Port
       </Button>
+    </div>
+  )
+}
+
+interface QuickAddPortsProps {
+  onQuickAdd: (port: number, label: string) => void
+}
+
+function QuickAddPorts({ onQuickAdd }: QuickAddPortsProps) {
+  return (
+    <div className="mt-8 pt-6 border-t">
+      <p className="text-xs text-muted-foreground mb-4 uppercase tracking-wide">
+        Quick add common ports
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {COMMON_PORTS.map(({ port, label }) => (
+          <Button
+            key={port}
+            variant="outline"
+            size="sm"
+            className="border-dashed"
+            onClick={() => onQuickAdd(port, label)}
+            title={label}
+          >
+            {port} <span className="ml-1 text-xs text-muted-foreground hidden sm:inline">({label})</span>
+          </Button>
+        ))}
+      </div>
     </div>
   )
 }
