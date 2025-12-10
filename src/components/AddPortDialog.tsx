@@ -105,6 +105,7 @@ export function AddPortDialog({ open, onOpenChange, onAdd, existingEntries = [] 
                 min={1}
                 max={65535}
                 required
+                autoFocus
               />
             </div>
           </div>
