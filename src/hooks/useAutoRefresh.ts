@@ -39,19 +39,30 @@ export function useAutoRefresh(onRefresh: () => void) {
 
   useEffect(() => {
     if (intervalRef.current) {
-      clearInterval(intervalRef.current)
+      clearTimeout(intervalRef.current)
     }
 
     if (config.enabled && config.intervalSeconds > 0) {
-      intervalRef.current = window.setInterval(
-        () => onRefreshRef.current(),
-        config.intervalSeconds * 1000
-      )
+      // Calculate interval with jitter (±10%)
+      const getNextInterval = () => {
+        const jitterFraction = Math.random() * 0.2 - 0.1 // ±10%
+        return config.intervalSeconds * 1000 * (1 + jitterFraction)
+      }
+
+      // Schedule first check with jitter
+      const scheduleNextCheck = () => {
+        intervalRef.current = window.setTimeout(() => {
+          onRefreshRef.current()
+          scheduleNextCheck()
+        }, getNextInterval())
+      }
+
+      scheduleNextCheck()
     }
 
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current)
+        clearTimeout(intervalRef.current)
       }
     }
   }, [config.enabled, config.intervalSeconds])
